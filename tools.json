@@ -1,0 +1,50 @@
+[
+    {
+        "name": "Item List",
+        "description": "Makes a list of items from the text.",
+        "prompt": "Make a list of items from the following text. Your output should consist of ONLY a list of items, one per line: {input}",
+        "structured": true
+    },
+    {
+        "name": "Group Items",
+        "description": "Groups items from the text into categories.",
+        "prompt": "Group the items from the following text into categories. Your output should consist of ONLY the categories and their items, formatted as follows:\nCategory 1:\n- Item 1\n- Item 2\nCategory 2:\n- Item 3\n\n{input}",
+        "structured": true
+    },
+    {
+        "name": "Extract Links",
+        "description": "Extracts all hyperlinks from the text.",
+        "prompt": "Extract all hyperlinks and URLs from the following text. Your output should consist of ONLY a list of links, one per line: {input}",
+        "structured": true
+    },
+    {
+        "name": "Extract IOCs",
+        "description": "Extracts Indicators of Compromise (IOCs) from the text.",
+        "prompt": "Extract a list of all IOCs (IP addresses, domain names, file hashes, etc.) from the following text. Your output should consist of ONLY the IOCs, one per line: {input}",
+        "structured": true
+    },
+    {
+        "name": "Extract Contact Info",
+        "description": "Extracts contact information from the text.",
+        "prompt": "Extract all contact information (names, emails, phone numbers, etc.) from the following text, grouped by contact name if applicable: {input}",
+        "structured": true
+    },
+    {
+        "name": "Extract Dates",
+        "description": "Extracts all dates from the text.",
+        "prompt": "Extract all dates from the following text. Your output should consist of ONLY a list of dates, one per line: {input}",
+        "structured": true
+    },
+    {
+        "name": "Extract Entities",
+        "description": "Extracts named entities from the text.",
+        "prompt": "Extract all named entities (people, organizations, locations, etc.) from the following text. Your output should consist of ONLY a list of entities, one per line: {input}",
+        "structured": true
+    },
+    {
+        "name": "Summarize Text",
+        "description": "Summarizes the provided text.",
+        "prompt": "Summarize the following text in a concise manner: {input}",
+        "structured": false
+    }
+]

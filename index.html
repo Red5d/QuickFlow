@@ -1,0 +1,267 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickFlow</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React, ReactDOM, and Babel scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/react@18.2.0/umd/react.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/react-dom@18.2.0/umd/react-dom.development.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.22.10/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+    const { createRoot } = ReactDOM;
+
+    // Fallback tools data in case fetch fails
+    const fallbackTools = [
+      {
+        name: "Item List",
+        description: "Makes a list of items from the text.",
+        prompt: "Make a list of items from the following text. Your output should consist of ONLY a list of items, one per line: {input}",
+        structured: true
+      },
+      {
+        name: "Extract Links",
+        description: "Extracts all hyperlinks from the text.",
+        prompt: "Extract all hyperlinks and URLs from the following text. Your output should consist of ONLY a list of links, one per line: {input}",
+        structured: true
+      },
+      {
+        name: "Extract IOCs",
+        description: "Extracts Indicators of Compromise (IOCs) from the text.",
+        prompt: "Extract a list of all IOCs (IP addresses, domain names, file hashes, etc.) from the following text. Your output should consist of ONLY the IOCs, one per line: {input}",
+        structured: true
+      },
+      {
+        name: "Extract Contact Info",
+        description: "Extracts contact information from the text.",
+        prompt: "Extract all contact information (names, emails, phone numbers, etc.) from the following text, grouped by contact name if applicable: {input}",
+        structured: true
+      },
+      {
+        name: "Summarize Text",
+        description: "Summarizes the provided text.",
+        prompt: "Summarize the following text in a concise manner: {input}",
+        structured: false
+      }
+    ];
+
+    // Fetch tools from JSON file
+    const fetchTools = async () => {
+      try {
+        // Replace with your actual JSON file path
+        const response = await fetch('/tools.json');
+        if (!response.ok) throw new Error('Failed to fetch tools');
+        const data = await response.json();
+        console.log('Fetched tools:', data); // Debug log
+        return data;
+      } catch (err) {
+        console.error('Fetch error:', err);
+        return fallbackTools; // Use fallback data
+      }
+    };
+
+    const App = () => {
+      const [tools, setTools] = useState([]);
+      const [selectedTool, setSelectedTool] = useState(null);
+      const [inputText, setInputText] = useState('');
+      const [image, setImage] = useState(null);
+      const [result, setResult] = useState(null);
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState(null);
+
+      // Fetch tools on mount
+      useEffect(() => {
+        setLoading(true);
+        fetchTools()
+          .then(data => {
+            setTools(data);
+            console.log('Tools set:', data); // Debug log
+          })
+          .catch(err => {
+            setError('Failed to load tools. Using fallback data.');
+            setTools(fallbackTools);
+          })
+          .finally(() => setLoading(false));
+      }, []);
+
+      // Handle tool submission to backend API
+      const handleSubmit = async () => {
+        if (!inputText && !image) {
+          setError('Please enter text or upload an image');
+          return;
+        }
+        setLoading(true);
+        setError(null);
+        try {
+          const formData = new FormData();
+          formData.append('prompt', selectedTool.prompt.replace('{input}', inputText));
+          if (image) formData.append('image', image);
+          formData.append('structured', selectedTool.structured);
+
+          const response = await fetch('/process', {
+            method: 'POST',
+            body: formData
+          });
+          if (!response.ok) throw new Error('API request failed');
+          const data = await response.json();
+          setResult(data.choices[0].message.content.trim().replaceAll('\n', '<br>') || 'No result returned');
+        } catch (err) {
+          setError('Failed to process request');
+          console.error('API error:', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      // Handle sending result to another tool
+      const handleSendToTool = (tool) => {
+        setSelectedTool(tool);
+        setInputText(result || '');
+        setResult(null);
+      };
+
+      return (
+        <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
+          {loading && <p className="text-gray-600">Loading tools...</p>}
+          {error && <p className="text-red-500 text-center mb-4">{error}</p>}
+          {!selectedTool ? (
+            <div className="w-full max-w-md">
+              <h1 className="text-2xl font-bold text-center mb-6 text-gray-800">QuickFlow</h1>
+              {tools.length === 0 && !loading && !error && (
+                <p className="text-gray-600 text-center">No tools available</p>
+              )}
+              <div className="space-y-4">
+                {tools.map((tool, index) => (
+                  <div
+                    key={index}
+                    className="bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition cursor-pointer"
+                    onClick={() => setSelectedTool(tool)}
+                  >
+                    <h2 className="text-lg font-semibold text-gray-800">{tool.name}</h2>
+                    <p className="text-gray-600">{tool.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="w-full max-w-md">
+              <button
+                className="mb-4 text-blue-600 hover:underline"
+                onClick={() => {
+                  setSelectedTool(null);
+                  setInputText('');
+                  setResult(null);
+                  setError(null);
+                }}
+              >
+                Back to Tools
+              </button>
+              <h1 className="text-2xl font-bold text-center mb-4 text-gray-800">{selectedTool.name}</h1>
+              <p className="text-gray-600 mb-4">{selectedTool.description}</p>
+              <textarea
+                className="w-full p-3 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                rows="5"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Enter your text here..."
+              />
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="w-full p-3 border rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onChange={(e) => setImage(e.target.files[0])}
+              />
+              <button
+                className="w-full bg-blue-600 text-white p-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50"
+                onClick={handleSubmit}
+                disabled={loading || (!inputText && !image)}
+              >
+                {loading ? 'Processing...' : 'Submit'}
+              </button>
+              {result && (
+                <div className="mt-6">
+                  <h2 className="text-lg font-semibold text-gray-800">Result:</h2>
+                  <div className="bg-white p-4 rounded-lg shadow-md">
+                    <div className="text-gray-600" dangerouslySetInnerHTML={{ __html: result }}></div>
+                  </div>
+                  <div className="mt-4">
+                    <h3 className="text-md font-semibold text-gray-800">Send to another tool:</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {tools
+                        .filter(tool => tool.name !== selectedTool.name)
+                        .map((tool, index) => (
+                          <button
+                            key={index}
+                            className="bg-gray-200 text-gray-800 px-3 py-1 rounded-lg hover:bg-gray-300 transition"
+                            onClick={() => handleSendToTool(tool)}
+                          >
+                            {tool.name}
+                          </button>
+                        ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // Render the app using createRoot
+    try {
+      const root = createRoot(document.getElementById('root'));
+      root.render(<App />);
+    } catch (err) {
+      console.error('Render error:', err);
+      document.getElementById('root').innerHTML = '<p class="text-red-500 text-center">Failed to render the application. Please check the console for errors.</p>';
+    }
+  </script>
+</body>
+</html>
