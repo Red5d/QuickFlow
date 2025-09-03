@@ -56,40 +56,6 @@
     const { useState, useEffect } = React;
     const { createRoot } = ReactDOM;
 
-    // Fallback tools data in case fetch fails
-    const fallbackTools = [
-      {
-        name: "Item List",
-        description: "Makes a list of items from the text.",
-        prompt: "Make a list of items from the following text. Your output should consist of ONLY a list of items, one per line: {input}",
-        structured: true
-      },
-      {
-        name: "Extract Links",
-        description: "Extracts all hyperlinks from the text.",
-        prompt: "Extract all hyperlinks and URLs from the following text. Your output should consist of ONLY a list of links, one per line: {input}",
-        structured: true
-      },
-      {
-        name: "Extract IOCs",
-        description: "Extracts Indicators of Compromise (IOCs) from the text.",
-        prompt: "Extract a list of all IOCs (IP addresses, domain names, file hashes, etc.) from the following text. Your output should consist of ONLY the IOCs, one per line: {input}",
-        structured: true
-      },
-      {
-        name: "Extract Contact Info",
-        description: "Extracts contact information from the text.",
-        prompt: "Extract all contact information (names, emails, phone numbers, etc.) from the following text, grouped by contact name if applicable: {input}",
-        structured: true
-      },
-      {
-        name: "Summarize Text",
-        description: "Summarizes the provided text.",
-        prompt: "Summarize the following text in a concise manner: {input}",
-        structured: false
-      }
-    ];
-
     // Fetch tools from JSON file
     const fetchTools = async () => {
       try {
@@ -101,7 +67,8 @@
         return data;
       } catch (err) {
         console.error('Fetch error:', err);
-        return fallbackTools; // Use fallback data
+        alert("Failed to fetch tools");
+        return []; // Return empty
       }
     };
 
