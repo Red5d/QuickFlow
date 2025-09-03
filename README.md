@@ -159,8 +159,8 @@ QuickFlow/
 
 ## License
 
-[Add your license information here]
+MIT
 
 ## Support
 
-For issues and questions, please [create an issue](link-to-issues) on the repository.
+For issues and questions, please [create an issue](https://github.com/Red5d/me-mcp/issues) on the repository.
