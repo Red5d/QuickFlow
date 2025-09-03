@@ -2,6 +2,10 @@
 
 QuickFlow is a web application that enables easy processing of text and images through a sequence of predefined Large Language Model (LLM) tasks. It provides a simple interface for chaining various data extraction and analysis operations.
 
+## Screenshots
+
+![Tool List](screenshot1.png) ![Example Usage](screenshot2.png)
+
 ## Features
 
 - **Text Processing**: Process text input through various LLM-powered tools
@@ -163,4 +167,4 @@ MIT
 
 ## Support
 
-For issues and questions, please [create an issue](https://github.com/Red5d/me-mcp/issues) on the repository.
+For issues and questions, please [create an issue](https://github.com/Red5d/QuickFlow/issues) on the repository.
